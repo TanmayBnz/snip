@@ -1,7 +1,7 @@
 # Kubernetes (k3s)
 
-**Status: in progress** — covers Tasks 9-11 (`snip`, node-exporter, Prometheus) so
-far. Will extend as Tasks 12-13 add Grafana and Alertmanager, all part of the same
+**Status: in progress** — covers Tasks 9-12 (`snip`, node-exporter, Prometheus,
+Grafana) so far. Will extend as Task 13 adds Alertmanager, all part of the same
 Kubernetes topic rather than split into five separate notes.
 
 ## What it is
