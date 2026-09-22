@@ -1,8 +1,8 @@
 # Kubernetes (k3s)
 
-**Status: in progress** — covers Tasks 9-12 (`snip`, node-exporter, Prometheus,
-Grafana) so far. Will extend as Task 13 adds Alertmanager, all part of the same
-Kubernetes topic rather than split into five separate notes.
+**Status: done** — covers all of Tasks 9-13 (`snip`, node-exporter, Prometheus,
+Grafana, Alertmanager), kept as one note since they're all the same Kubernetes
+concepts applied five times rather than five separate things to learn.
 
 ## What it is
 
@@ -170,6 +170,27 @@ understands the internal structure of. Verified separately with `promtool` (see
 [prometheus.md](prometheus.md)) — a `kubectl`-only validation pass would have missed
 a PromQL syntax error entirely.
 
+**Secret (`k8s/alertmanager/secret.yaml.example`, Task 13)** is the same
+mount-a-file mechanism as ConfigMap, semantically distinguished for sensitive data:
+```yaml
+kind: Secret
+metadata:
+  name: alertmanager-config
+stringData:
+  alertmanager.yml: |
+    ...
+```
+`stringData` is a convenience field — write plaintext, Kubernetes base64-encodes it
+into the real `data` field at apply time. This is **encoding, not encryption** — a
+Secret is exactly as readable to anyone with cluster access as a ConfigMap, just
+base64'd. The actual secret-keeping happens entirely outside Kubernetes here: the
+real `secret.yaml` (with a genuine Discord webhook URL) is gitignored and never
+committed; only `secret.yaml.example` (a placeholder) is checked in. Kubernetes
+Secrets solve "don't put this in a ConfigMap by habit," not "keep this confidential
+from anyone with `kubectl get secret -o yaml` access" — a real production setup
+would layer a proper secrets manager (Vault, AWS Secrets Manager, sealed-secrets) on
+top for that, none of which this project needed given it's a single-operator cluster.
+
 ## What someone would ask
 
 **"Why k3d for local validation instead of minikube or kind?"** Not a strong
@@ -222,3 +243,12 @@ without ever touching AWS. It does *not* catch everything — see below.
   These are real container-isolation escapes, appropriate for a monitoring agent but
   worth being able to name explicitly as a deliberately elevated-privilege workload
   if asked "what in this cluster has host-level access and why."
+- **No Kubernetes-level secret encryption at rest configured** — k3s's default etcd
+  (or in k3s's case, its embedded datastore) storage of Secrets is not encrypted by
+  default; base64 is the only transformation applied. Not addressed here, consistent
+  with treating "keep the webhook out of git" as the actual security boundary rather
+  than anything Kubernetes-native.
+- **None of these manifests have ever actually run against the real EC2/k3s
+  instance** — every validation in this note (Tasks 9-13) is local: k3d for schema,
+  `promtool`/`amtool`/direct YAML-JSON parsing for embedded config content. The first
+  time any of this touches the real target environment is the README/demo task.

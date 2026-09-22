@@ -14,10 +14,10 @@ before the code exists would be guessing, not grounding.
 | SQLite (`modernc.org/sqlite`) | [sqlite.md](sqlite.md) | done |
 | Docker | [docker.md](docker.md) | done |
 | Terraform | [terraform.md](terraform.md) | done |
-| Kubernetes (k3s) | [kubernetes.md](kubernetes.md) | in progress — Task 9 done, Tasks 10-13 pending |
+| Kubernetes (k3s) | [kubernetes.md](kubernetes.md) | done |
 | Prometheus | [prometheus.md](prometheus.md) | done |
 | Grafana | [grafana.md](grafana.md) | done |
-| Alertmanager | [alertmanager.md](alertmanager.md) | not started — Task 13 |
+| Alertmanager | [alertmanager.md](alertmanager.md) | done |
 | GitHub Actions CI/CD | [github-actions.md](github-actions.md) | not started — Tasks 15-16 |
 
 Source docs: [design spec](../superpowers/specs/2026-09-22-snip-observability-stack-design.md), [implementation plan](../superpowers/plans/2026-09-22-snip-observability-stack.md).
