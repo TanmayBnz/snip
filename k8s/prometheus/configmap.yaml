@@ -1,0 +1,76 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+    alerting:
+      alertmanagers:
+        - static_configs:
+            - targets: ["alertmanager:9093"]
+    rule_files:
+      - /etc/prometheus/rules.yml
+    scrape_configs:
+      - job_name: snip
+        static_configs:
+          - targets: ["snip:8080"]
+      - job_name: node
+        static_configs:
+          - targets: ["node-exporter:9100"]
+      - job_name: prometheus
+        static_configs:
+          - targets: ["localhost:9090"]
+  rules.yml: |
+    groups:
+      - name: snip
+        rules:
+          - alert: SnipDown
+            expr: up{job="snip"} == 0
+            for: 1m
+            labels:
+              severity: critical
+            annotations:
+              summary: "snip is down"
+              description: "Prometheus has not been able to scrape snip for 1 minute."
+          - alert: SnipHighErrorRate
+            expr: |
+              sum(rate(http_requests_total{job="snip",status=~"5.."}[5m]))
+              /
+              sum(rate(http_requests_total{job="snip"}[5m])) > 0.05
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "snip error rate above 5%"
+              description: "More than 5% of requests to snip have returned 5xx over the last 5 minutes."
+          - alert: SnipHighLatency
+            expr: |
+              histogram_quantile(0.99,
+                sum(rate(http_request_duration_seconds_bucket{job="snip"}[5m])) by (le)
+              ) > 1
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "snip p99 latency above 1s"
+              description: "99th percentile request latency has exceeded 1 second for 5 minutes."
+      - name: node
+        rules:
+          - alert: NodeMemoryPressure
+            expr: node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes < 0.1
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Node available memory below 10%"
+              description: "The node has less than 10% memory available."
+          - alert: NodeDiskPressure
+            expr: node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"} < 0.1
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Node root disk below 10% free"
+              description: "The node's root filesystem has less than 10% free space."
