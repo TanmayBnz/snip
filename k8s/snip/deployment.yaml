@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: snip
+  labels:
+    app: snip
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: snip
+  template:
+    metadata:
+      labels:
+        app: snip
+    spec:
+      containers:
+        - name: snip
+          image: docker.io/REPLACE_WITH_DOCKERHUB_USERNAME/snip:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: PORT
+              value: "8080"
+            - name: DB_PATH
+              value: "/data/snip.db"
+            - name: BASE_URL
+              value: "http://localhost:8080"
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          resources:
+            requests:
+              cpu: 25m
+              memory: 32Mi
+            limits:
+              cpu: 200m
+              memory: 96Mi
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: snip-data
