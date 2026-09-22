@@ -18,6 +18,6 @@ before the code exists would be guessing, not grounding.
 | Prometheus | [prometheus.md](prometheus.md) | done |
 | Grafana | [grafana.md](grafana.md) | done |
 | Alertmanager | [alertmanager.md](alertmanager.md) | done |
-| GitHub Actions CI/CD | [github-actions.md](github-actions.md) | not started — Tasks 15-16 |
+| GitHub Actions CI/CD | [github-actions.md](github-actions.md) | in progress — Task 15 done, Task 16 pending |
 
 Source docs: [design spec](../superpowers/specs/2026-09-22-snip-observability-stack-design.md), [implementation plan](../superpowers/plans/2026-09-22-snip-observability-stack.md).
