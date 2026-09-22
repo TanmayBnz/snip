@@ -1,7 +1,7 @@
 # GitHub Actions CI/CD
 
-**Status: in progress** — covers Task 15 (`ci-build.yml`: test, smoke, build, push,
-deploy). Will extend once Task 16 adds the Terraform format/validate gate.
+**Status: done** — covers Task 15 (`ci-build.yml`: test, smoke, build, push, deploy)
+and Task 16 (`terraform-check.yml`: fmt/validate gate on `infra/` PRs).
 
 ## What it is
 
@@ -112,6 +112,22 @@ instance outside of CI entirely, applied the fix, then ran the corrected workflo
 `DOCKERHUB_TOKEN`/`SNIP_SSH_KEY`/`SNIP_HOST` as real GitHub Actions secrets, and
 `SNIP_HOST` specifically doesn't exist until a real `terraform apply` produces an
 EC2 IP. First real end-to-end run happens at the README/demo task.
+
+**`.github/workflows/terraform-check.yml`** (Task 16) — a second, separate workflow,
+triggered only on `pull_request` events that touch `infra/**`:
+```yaml
+- run: terraform init -backend=false
+- run: terraform fmt -check
+- run: terraform validate
+```
+Deliberately **read-only** — it never runs `plan` or `apply`, matching the project's
+manual-apply-only policy from [terraform.md](terraform.md) (a CI runner has no record
+of what a prior local `apply` created, so it must never be trusted to `apply`/`destroy`
+on its own). `-backend=false` skips remote-state configuration entirely, since state
+here is local and gitignored anyway ([terraform.md](terraform.md)) — the workflow only
+needs the provider plugins downloaded to run `validate`, not real state. Verified with
+a real `act` run before committing: `init`/`fmt -check`/`validate` all passed against
+`infra/` exactly as it stands, in ~50 seconds total including the provider download.
 
 ## What someone would ask
 
