@@ -2,38 +2,193 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>snip</title>
   <style>
-    body { font-family: system-ui, sans-serif; max-width: 32rem; margin: 4rem auto; padding: 0 1rem; }
-    input, button { font-size: 1rem; padding: 0.5rem; }
-    input { width: 70%; }
-    #result { margin-top: 1rem; word-break: break-all; }
+    :root {
+      --bg: #f7f7f8;
+      --card: #ffffff;
+      --text: #1a1a1a;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --accent: #2563eb;
+      --accent-hover: #1d4ed8;
+      --error: #dc2626;
+      --error-bg: #fef2f2;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0f1117;
+        --card: #1a1d27;
+        --text: #e5e7eb;
+        --muted: #9ca3af;
+        --border: #2d3140;
+        --accent: #3b82f6;
+        --accent-hover: #60a5fa;
+        --error: #f87171;
+        --error-bg: #2a1518;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 2rem;
+      width: 100%;
+      max-width: 32rem;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+    h1 {
+      margin: 0 0 0.25rem;
+      font-size: 1.5rem;
+    }
+    .tagline {
+      margin: 0 0 1.5rem;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+    form {
+      display: flex;
+      gap: 0.5rem;
+    }
+    input {
+      flex: 1;
+      min-width: 0;
+      font-size: 1rem;
+      padding: 0.6rem 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg);
+      color: var(--text);
+    }
+    input:focus {
+      outline: 2px solid var(--accent);
+      outline-offset: 1px;
+    }
+    button {
+      font-size: 1rem;
+      padding: 0.6rem 1.1rem;
+      border: none;
+      border-radius: 8px;
+      background: var(--accent);
+      color: white;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    button:hover:not(:disabled) { background: var(--accent-hover); }
+    button:disabled { opacity: 0.6; cursor: default; }
+    #result {
+      margin-top: 1.25rem;
+      font-size: 0.95rem;
+    }
+    .result-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.6rem 0.75rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      word-break: break-all;
+    }
+    .result-row a {
+      color: var(--accent);
+      text-decoration: none;
+      flex: 1;
+    }
+    .result-row a:hover { text-decoration: underline; }
+    .copy-btn {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      padding: 0.3rem 0.6rem;
+      font-size: 0.8rem;
+      flex-shrink: 0;
+    }
+    .copy-btn:hover:not(:disabled) { background: var(--border); }
+    .error {
+      color: var(--error);
+      background: var(--error-bg);
+      padding: 0.6rem 0.75rem;
+      border-radius: 8px;
+      font-size: 0.9rem;
+    }
   </style>
 </head>
 <body>
-  <h1>snip</h1>
-  <form id="f">
-    <input id="url" type="url" placeholder="https://example.com/very/long/link" required>
-    <button type="submit">Shorten</button>
-  </form>
-  <div id="result"></div>
+  <div class="card">
+    <h1>snip</h1>
+    <p class="tagline">Paste a long URL, get a short link back.</p>
+    <form id="f">
+      <input id="url" type="url" placeholder="https://example.com/very/long/link" required>
+      <button id="submit-btn" type="submit">Shorten</button>
+    </form>
+    <div id="result"></div>
+  </div>
   <script>
-    document.getElementById('f').addEventListener('submit', async (e) => {
+    const form = document.getElementById('f');
+    const submitBtn = document.getElementById('submit-btn');
+    const result = document.getElementById('result');
+
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const url = document.getElementById('url').value;
-      const res = await fetch('/api/shorten', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url }),
-      });
-      const div = document.getElementById('result');
-      if (!res.ok) {
-        div.textContent = 'Error: ' + (await res.text());
-        return;
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Shortening…';
+      result.innerHTML = '';
+
+      try {
+        const res = await fetch('/api/shorten', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url }),
+        });
+
+        if (!res.ok) {
+          const text = await res.text();
+          result.innerHTML = '<div class="error">Error: ' + escapeHtml(text) + '</div>';
+          return;
+        }
+
+        const data = await res.json();
+        result.innerHTML =
+          '<div class="result-row">' +
+            '<a href="' + escapeHtml(data.short_url) + '" target="_blank" rel="noopener">' + escapeHtml(data.short_url) + '</a>' +
+            '<button type="button" class="copy-btn" id="copy-btn">Copy</button>' +
+          '</div>';
+
+        document.getElementById('copy-btn').addEventListener('click', async () => {
+          const copyBtn = document.getElementById('copy-btn');
+          await navigator.clipboard.writeText(data.short_url);
+          copyBtn.textContent = 'Copied!';
+          setTimeout(() => { copyBtn.textContent = 'Copy'; }, 1500);
+        });
+      } catch (err) {
+        result.innerHTML = '<div class="error">Network error — is the server reachable?</div>';
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Shorten';
       }
-      const data = await res.json();
-      div.innerHTML = 'Short link: <a href="' + data.short_url + '">' + data.short_url + '</a>';
     });
+
+    function escapeHtml(s) {
+      const div = document.createElement('div');
+      div.textContent = s;
+      return div.innerHTML;
+    }
   </script>
 </body>
 </html>
