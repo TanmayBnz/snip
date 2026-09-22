@@ -11,7 +11,7 @@ before the code exists would be guessing, not grounding.
 | Topic | File | Status |
 |---|---|---|
 | Go | [go.md](go.md) | not started — Task 2 in progress |
-| SQLite (`modernc.org/sqlite`) | [sqlite.md](sqlite.md) | not started — Task 3 |
+| SQLite (`modernc.org/sqlite`) | [sqlite.md](sqlite.md) | done |
 | Docker | [docker.md](docker.md) | not started — Task 7 |
 | Terraform | [terraform.md](terraform.md) | not started — Task 8 |
 | Kubernetes (k3s) | [kubernetes.md](kubernetes.md) | not started — Tasks 9-10 |
