@@ -165,10 +165,9 @@ clean. Worth knowing the distinction rather than avoiding the pattern out of cau
   `Shorten` request with a missing `Content-Type` header, or a `Redirect` hitting a
   code with unicode in it (not that `Encode` can produce one, but nothing enforces
   that `r.PathValue("code")` won't).
-- **Module cache integrity was compromised once, mid-project** (see
-  [[feedback-module-cache-corruption]] if working from agent memory, or just: a method
-  got hand-written into `client_golang`'s cached source instead of fixed in project
-  code, caught via `go mod verify` reporting "dir has been modified," fixed by
-  deleting and re-downloading that cached module version). Not a Go language gap, but
-  a real incident worth being able to describe if asked "what went wrong during
+- **Module cache integrity was compromised once, mid-project:** a method got
+  hand-written into `client_golang`'s cached source instead of fixed in project code,
+  caught via `go mod verify` reporting "dir has been modified," fixed by deleting and
+  re-downloading that cached module version. Not a Go language gap, but a real
+  incident worth being able to describe if asked "what went wrong during
   development."
