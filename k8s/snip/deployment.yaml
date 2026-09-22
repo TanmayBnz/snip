@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: snip
-          image: docker.io/REPLACE_WITH_DOCKERHUB_USERNAME/snip:latest
+          image: docker.io/tanmaybnz/snip:latest
           ports:
             - containerPort: 8080
           env:
