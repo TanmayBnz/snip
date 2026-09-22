@@ -1,8 +1,8 @@
 # Kubernetes (k3s)
 
-**Status: done** — covers all of Tasks 9-13 (`snip`, node-exporter, Prometheus,
-Grafana, Alertmanager), kept as one note since they're all the same Kubernetes
-concepts applied five times rather than five separate things to learn.
+**Status: done** — covers all of Tasks 9-14 (`snip`, node-exporter, Prometheus,
+Grafana, Alertmanager, load-generator), kept as one note since they're mostly the
+same Kubernetes concepts applied repeatedly rather than separate things to learn.
 
 ## What it is
 
@@ -191,6 +191,35 @@ from anyone with `kubectl get secret -o yaml` access" — a real production setu
 would layer a proper secrets manager (Vault, AWS Secrets Manager, sealed-secrets) on
 top for that, none of which this project needed given it's a single-operator cluster.
 
+**CronJob/Job (`k8s/load-generator/cronjob.yaml`, Task 14)** is a third scheduling
+model, distinct from both Deployment (keep N replicas running forever) and DaemonSet
+(one per node forever): a **Job** runs a pod to completion once and stops — no
+restart on success, `restartPolicy: Never` at the pod level (versus Deployment pods,
+which default to `Always`). A **CronJob** creates a new Job on a cron schedule
+(`"* * * * *"` here — every minute). `concurrencyPolicy: Forbid` skips starting a new
+Job if the previous minute's run is still going, avoiding pile-up if `snip` ever
+responds slowly.
+
+**This was verified with a real, live deployment, not just schema validation** — the
+strongest verification in this whole project's Kubernetes work. Imported the Task
+7 `snip:local` Docker image directly into the k3d cluster (`k3d image import`), ran
+`kubectl apply -f k8s/snip/` for real (not `--dry-run`), swapped in the local image
+(`kubectl set image`), then applied this CronJob and let it actually fire — both via
+a manually-triggered one-off Job (`kubectl create job --from=cronjob/...`) and the
+CronJob's own live schedule, since applying a CronJob makes it active immediately.
+Confirmed via `snip`'s real `/metrics` endpoint after both runs completed:
+```
+links_created_total 37
+redirects_total 37
+```
+Equal counts confirm every one of the 37 `POST /api/shorten` calls across both job
+runs got a code successfully extracted (via `sed`) from curl's response and
+successfully redirected — genuine proof the shell script's JSON-parsing-via-regex
+and `$RANDOM` (separately confirmed to actually work in this Alpine-based image's
+`/bin/sh`, not assumed) both function correctly end-to-end against a real running
+service. Torn down afterward (`kubectl delete -f k8s/snip/`, delete job/cronjob) so
+the CronJob doesn't keep firing against the local validation cluster indefinitely.
+
 ## What someone would ask
 
 **"Why k3d for local validation instead of minikube or kind?"** Not a strong
@@ -248,7 +277,10 @@ without ever touching AWS. It does *not* catch everything — see below.
   default; base64 is the only transformation applied. Not addressed here, consistent
   with treating "keep the webhook out of git" as the actual security boundary rather
   than anything Kubernetes-native.
-- **None of these manifests have ever actually run against the real EC2/k3s
-  instance** — every validation in this note (Tasks 9-13) is local: k3d for schema,
-  `promtool`/`amtool`/direct YAML-JSON parsing for embedded config content. The first
-  time any of this touches the real target environment is the README/demo task.
+- **None of these manifests have ever run against the real EC2/k3s instance.**
+  `snip` and the load-generator (Task 14) were run for real, but on a local k3d
+  cluster, not the actual target — real Kubernetes semantics, but not the actual
+  hardware/network/security-group environment. node-exporter, Prometheus, Grafana,
+  and Alertmanager have only ever been schema/content-validated (`promtool`,
+  `amtool`, direct YAML/JSON parsing), never actually run at all, on any cluster.
+  The first time the whole stack runs together, for real, is the README/demo task.
