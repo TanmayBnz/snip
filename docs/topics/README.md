@@ -15,7 +15,7 @@ before the code exists would be guessing, not grounding.
 | Docker | [docker.md](docker.md) | done |
 | Terraform | [terraform.md](terraform.md) | done |
 | Kubernetes (k3s) | [kubernetes.md](kubernetes.md) | in progress — Task 9 done, Tasks 10-13 pending |
-| Prometheus | [prometheus.md](prometheus.md) | not started — Task 11 |
+| Prometheus | [prometheus.md](prometheus.md) | done |
 | Grafana | [grafana.md](grafana.md) | not started — Task 12 |
 | Alertmanager | [alertmanager.md](alertmanager.md) | not started — Task 13 |
 | GitHub Actions CI/CD | [github-actions.md](github-actions.md) | not started — Tasks 15-16 |

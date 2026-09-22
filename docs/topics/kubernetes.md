@@ -1,9 +1,8 @@
 # Kubernetes (k3s)
 
-**Status: in progress** — this note covers Task 9 (`snip`'s own Deployment/Service/PVC)
-and will be extended as Tasks 10-13 add node-exporter, Prometheus, Grafana, and
-Alertmanager manifests, all part of the same Kubernetes topic rather than split into
-five separate notes.
+**Status: in progress** — covers Tasks 9-11 (`snip`, node-exporter, Prometheus) so
+far. Will extend as Tasks 12-13 add Grafana and Alertmanager, all part of the same
+Kubernetes topic rather than split into five separate notes.
 
 ## What it is
 
@@ -106,6 +105,71 @@ service/snip created (dry run)
 This cluster is reused for Tasks 10-13's manifests too, rather than reinstalling
 tooling per task.
 
+**DaemonSet (`k8s/node-exporter/daemonset.yaml`, Task 10)** is a different scheduling
+model from Deployment: instead of "run N replicas, scheduler decides where," a
+DaemonSet runs exactly one pod *per node*, automatically, with no replica count to
+specify at all. On this single-node cluster it behaves identically to `replicas: 1`,
+but the mechanism differs — on a multi-node cluster it would guarantee monitoring
+coverage on every node with zero additional configuration.
+
+```yaml
+spec:
+  hostNetwork: true
+  hostPID: true
+  volumes:
+    - name: rootfs
+      hostPath:
+        path: /
+```
+`hostNetwork`/`hostPID` and a read-only `hostPath` mount of the host's root
+filesystem are what let `node-exporter` report the *actual host's* CPU/memory/disk,
+not just its own container's isolated (and largely meaningless, for this purpose)
+view. `hostPath` is a real escape hatch out of container isolation — appropriate for
+a monitoring agent that specifically needs host visibility, a red flag for almost
+anything else.
+
+**ConfigMap (`k8s/prometheus/configmap.yaml`, Task 11)** is how a whole config *file*
+(not just a scalar value) gets into a container:
+```yaml
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+    ...
+```
+The `|` is YAML's literal block scalar syntax — everything indented under it becomes
+one multi-line string, preserving newlines exactly. Mounted into the Prometheus
+Deployment via `volumes.configMap` at `/etc/prometheus/`, this ConfigMap's two keys
+(`prometheus.yml`, `rules.yml`) become two real files at that path inside the
+container. Contrast with `snip`'s own Deployment (Task 9), which used plain `env` var
+entries — appropriate there because it's a handful of scalar values, not a structured
+config file Prometheus itself needs to parse.
+
+**Kubernetes Service DNS is how Prometheus finds its scrape targets**, without any
+service-discovery machinery:
+```yaml
+scrape_configs:
+  - job_name: snip
+    static_configs:
+      - targets: ["snip:8080"]
+```
+`"snip:8080"` resolves via the cluster's internal DNS to the `snip` Service (Task 9),
+which routes to whichever pod(s) currently match its label selector — Prometheus
+never needs to know a pod IP directly. This is why the plan calls this
+"single-node cluster, no service-discovery/RBAC needed" — a static list of 3 known
+Service names is sufficient here. A real multi-node, many-services production
+cluster would instead use `kubernetes_sd_configs` (Prometheus querying the
+Kubernetes API directly to discover targets dynamically as pods come and go), which
+needs RBAC permissions this project deliberately doesn't grant.
+
+**ConfigMap content is opaque to Kubernetes — a second, separate validation is
+needed.** `kubectl apply --dry-run=client` confirms `configmap.yaml` is valid
+Kubernetes YAML; it does **not** parse or validate `prometheus.yml`/`rules.yml`'s
+*contents*, since to Kubernetes that's just a string value, not something it
+understands the internal structure of. Verified separately with `promtool` (see
+[prometheus.md](prometheus.md)) — a `kubectl`-only validation pass would have missed
+a PromQL syntax error entirely.
+
 ## What someone would ask
 
 **"Why k3d for local validation instead of minikube or kind?"** Not a strong
@@ -146,3 +210,15 @@ without ever touching AWS. It does *not* catch everything — see below.
   `replicas: 1` on a single-node cluster with no autoscaling infrastructure, but
   worth naming as absent rather than implying single-replica-no-autoscaling was
   itself a considered trade-off beyond "this is a demo project on one small box."
+- **No RBAC configured anywhere, deliberately.** Prometheus scrapes via static,
+  hardcoded Service names rather than the Kubernetes API, so it never needs a
+  ServiceAccount with API read permissions. This is a real trade-off, not a gap
+  glossed over: it means adding a fourth scraped service means manually editing
+  `configmap.yaml` rather than it being auto-discovered — acceptable at 3 static
+  targets on 1 node, would not scale past a handful of services or multiple nodes
+  where pods (and their IPs) come and go on their own schedule.
+- **`node-exporter`'s `hostPath`/`hostNetwork`/`hostPID` access hasn't been
+  security-reviewed beyond "this is what the upstream docs say node-exporter needs."**
+  These are real container-isolation escapes, appropriate for a monitoring agent but
+  worth being able to name explicitly as a deliberately elevated-privilege workload
+  if asked "what in this cluster has host-level access and why."
