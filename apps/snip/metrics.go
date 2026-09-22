@@ -13,6 +13,7 @@ type Metrics struct {
 	duration     *prometheus.HistogramVec
 	linksCreated prometheus.Counter
 	redirects    prometheus.Counter
+	gatherer     prometheus.Gatherer
 }
 
 func NewMetrics(reg prometheus.Registerer) *Metrics {
@@ -39,6 +40,9 @@ func NewMetrics(reg prometheus.Registerer) *Metrics {
 	}
 
 	reg.MustRegister(m.requests, m.duration, m.linksCreated, m.redirects)
+	if g, ok := reg.(prometheus.Gatherer); ok {
+		m.gatherer = g
+	}
 	return m
 }
 
