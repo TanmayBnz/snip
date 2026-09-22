@@ -13,7 +13,7 @@ before the code exists would be guessing, not grounding.
 | Go | [go.md](go.md) | done |
 | SQLite (`modernc.org/sqlite`) | [sqlite.md](sqlite.md) | done |
 | Docker | [docker.md](docker.md) | done |
-| Terraform | [terraform.md](terraform.md) | not started — Task 8 |
+| Terraform | [terraform.md](terraform.md) | done |
 | Kubernetes (k3s) | [kubernetes.md](kubernetes.md) | not started — Tasks 9-10 |
 | Prometheus | [prometheus.md](prometheus.md) | not started — Task 11 |
 | Grafana | [grafana.md](grafana.md) | not started — Task 12 |
