@@ -10,7 +10,7 @@ before the code exists would be guessing, not grounding.
 
 | Topic | File | Status |
 |---|---|---|
-| Go | [go.md](go.md) | not started — Task 2 in progress |
+| Go | [go.md](go.md) | done |
 | SQLite (`modernc.org/sqlite`) | [sqlite.md](sqlite.md) | done |
 | Docker | [docker.md](docker.md) | not started — Task 7 |
 | Terraform | [terraform.md](terraform.md) | not started — Task 8 |
