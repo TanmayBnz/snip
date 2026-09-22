@@ -107,13 +107,21 @@ Two separate GitHub Actions workflows:
    the git SHA. On success, SSH into the EC2 box (host IP and SSH key as
    GitHub secrets) and run `kubectl set image deployment/snip
    snip=<user>/snip:<sha>` to roll out the new version.
-2. **`terraform.yml`** (manual `workflow_dispatch` only, `apply` or
-   `destroy` as an input): runs the Terraform lifecycle. Kept out of the
-   push-triggered path entirely so infrastructure cost is always an
-   explicit, deliberate action. A separate PR-triggered job runs `terraform
-   fmt -check` and `terraform validate` as a lightweight IaC gate — this one
-   *does* run on every PR touching `/infra`, since it costs nothing and
-   catches mistakes early.
+2. **`terraform-check.yml`** (on PR touching `/infra`): runs `terraform fmt
+   -check` and `terraform validate` only — no `apply`/`destroy` in CI at
+   all. This is a lightweight IaC gate that costs nothing and catches
+   mistakes early.
+
+Terraform's `apply`/`destroy` lifecycle is run manually, from the operator's
+own machine, via `terraform apply` / `terraform destroy` in `/infra`. This
+is a deliberate consequence of the "local state file" decision above: state
+that lives only on the operator's laptop cannot be applied or destroyed
+from a GitHub Actions runner, which starts with an empty filesystem on every
+run — a `destroy` from CI would have no record of what `apply` created. A
+CI-driven Terraform lifecycle would require a remote state backend (S3 +
+DynamoDB), which was deliberately rejected above to keep this a zero-cost,
+zero-setup solo project. The README documents the manual apply/destroy
+commands as part of the demo workflow.
 
 ## Presentation model
 
